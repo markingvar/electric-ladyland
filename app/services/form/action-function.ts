@@ -1,6 +1,7 @@
 import {
   checkContextForErrors,
   handleFormData,
+  handleListItemFormStructureOp,
   honeypotFieldHasValue,
 } from "./action-utils";
 import { FormFieldInput, MultiStepForm } from "./types";
@@ -73,100 +74,17 @@ async function formActionFunction({
 
   const operationType = body.get("operation-type");
 
-  // list item structure create/edit/delete ops
-  if (operationType === "add-item-to-list") {
-    let listItemObject: any = {};
-
-    console.log({ currentStep: formBlueprint[context?.currentStep]?.fields });
-
-    let expandableList = formBlueprint[context?.currentStep]?.fields.find(
-      (item) => {
-        return item.type === "expandable-list";
-      }
-    );
-    console.log({ expandableList });
-
-    let expandableListArr = context?.[expandableList.name]?.value ?? [];
-
-    console.log({ expandableListArr });
-
-    expandableList.listItemStructure.forEach((field: any) => {
-      listItemObject[field.name] = {
-        value: body.get(field.name),
-        errors: [],
-      };
-    });
-
-    expandableListArr.push(listItemObject);
-
-    session.set("context", {
-      ...context,
-      [expandableList.name]: {
-        value: expandableListArr,
-        errors: [],
-      },
-    });
-
-    return redirect(pathname, {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    });
-  } else if (operationType === "edit-list-item") {
-    let indexToChange = body.get("index-to-change");
-
-    let expandableList = formBlueprint[context?.currentStep]?.fields.find(
-      (item) => {
-        return item.type === "expandable-list";
-      }
-    );
-    let expandableListArr = context?.[expandableList.name]?.value ?? [];
-
-    console.log({ expandableListArr });
-
-    expandableList.listItemStructure.forEach((field: any) => {
-      expandableListArr[Number(indexToChange)][field.name] = {
-        value: body.get(field.name),
-        errors: [],
-      };
-    });
-
-    session.set("context", {
-      ...context,
-      [expandableList.name]: {
-        value: expandableListArr,
-        errors: [],
-      },
-    });
-
-    return redirect(pathname, {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    });
-  } else if (operationType === "delete-list-item") {
-    let indexToDelete = body.get("index-to-delete");
-
-    let expandableList = formBlueprint[context?.currentStep]?.fields.find(
-      (item) => {
-        return item.type === "expandable-list";
-      }
-    );
-    let expandableListArr = context?.[expandableList.name]?.value ?? [];
-    expandableListArr.splice(Number(indexToDelete), 1);
-
-    session.set("context", {
-      ...context,
-      [expandableList.name]: {
-        value: expandableListArr,
-        errors: [],
-      },
-    });
-
-    return redirect(pathname, {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
+  // *** ALERT ***
+  // operationType only exists for list item form structure
+  // Handle accordingly
+  if (operationType) {
+    return await handleListItemFormStructureOp({
+      operationType,
+      formBlueprint,
+      context,
+      session,
+      pathname,
+      body,
     });
   }
 
