@@ -2,14 +2,14 @@ import { MultiStepForm } from "~/services/form/types";
 
 export function getFormStage({
   context,
-  formStructure,
+  formBlueprint,
 }: {
   context: any;
-  formStructure: MultiStepForm;
+  formBlueprint: MultiStepForm;
 }): "beginning" | "middle" | "end" {
   // What stage of the form are we in
   // Beginning - Middle - End
-  const numberOfAvailableSteps = formStructure.length;
+  const numberOfAvailableSteps = formBlueprint.length;
   let formStage: "beginning" | "middle" | "end" =
     context.currentStep === 0
       ? "beginning"

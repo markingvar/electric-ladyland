@@ -2,10 +2,10 @@ import { ReactNode, useEffect, useState } from "react";
 import type {
   ExpandableList,
   FormFieldInput,
-  FormStructure,
+  FormBlueprint,
   StatefulRadioField,
 } from "~/services/form/types";
-import styles from "~/styles/form.css";
+// import styles from "~/styles/form.css";
 import { convertSingleQuotes } from "~/services/form/shared";
 import { DialogOverlay, DialogContent } from "@reach/dialog";
 import { Form, useSubmit } from "@remix-run/react";
@@ -46,7 +46,7 @@ function displayFieldErrors({
   );
 }
 
-FormField.styles = styles;
+// FormField.styles = styles;
 
 // eslint-disable-next-line complexity
 export function FormField({

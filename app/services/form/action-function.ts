@@ -19,28 +19,34 @@ import { getFormStage } from "./shared";
 async function formActionFunction({
   formType,
   request,
-  formStructure,
+  formBlueprint,
   handleDataFn,
   successRedirectPath,
 }:
   | {
       formType: "basic";
       request: Request;
-      formStructure: FormFieldInput[];
+      formBlueprint: FormFieldInput[];
       handleDataFn: any;
       successRedirectPath: string;
     }
   | {
       formType: "multipart";
       request: Request;
-      formStructure: MultiStepForm;
+      formBlueprint: MultiStepForm;
       handleDataFn: any;
       successRedirectPath: string;
     }): Promise<any> {
   // Get the current session
   const session = await getSession(request.headers.get("Cookie"));
 
+  console.log({ session });
+
+  let { pathname } = new URL(request.url);
+
   let context: any = session.get("context") ?? {};
+
+  console.log({ context });
 
   // If there is no context, the session most likely timed out
   // We only really care about the context if it is a multipart form
@@ -58,10 +64,110 @@ async function formActionFunction({
 
   const body = await request.formData();
 
+  // Handle bots by checking for honeypot field
   let honeypotFieldHit = honeypotFieldHasValue({ body });
 
   if (honeypotFieldHit) {
     return redirect("/");
+  }
+
+  const operationType = body.get("operation-type");
+
+  // list item structure create/edit/delete ops
+  if (operationType === "add-item-to-list") {
+    let listItemObject: any = {};
+
+    console.log({ currentStep: formBlueprint[context?.currentStep]?.fields });
+
+    let expandableList = formBlueprint[context?.currentStep]?.fields.find(
+      (item) => {
+        return item.type === "expandable-list";
+      }
+    );
+    console.log({ expandableList });
+
+    let expandableListArr = context?.[expandableList.name]?.value ?? [];
+
+    console.log({ expandableListArr });
+
+    expandableList.listItemStructure.forEach((field: any) => {
+      listItemObject[field.name] = {
+        value: body.get(field.name),
+        errors: [],
+      };
+    });
+
+    expandableListArr.push(listItemObject);
+
+    session.set("context", {
+      ...context,
+      [expandableList.name]: {
+        value: expandableListArr,
+        errors: [],
+      },
+    });
+
+    return redirect(pathname, {
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    });
+  } else if (operationType === "edit-list-item") {
+    let indexToChange = body.get("index-to-change");
+
+    let expandableList = formBlueprint[context?.currentStep]?.fields.find(
+      (item) => {
+        return item.type === "expandable-list";
+      }
+    );
+    let expandableListArr = context?.[expandableList.name]?.value ?? [];
+
+    console.log({ expandableListArr });
+
+    expandableList.listItemStructure.forEach((field: any) => {
+      expandableListArr[Number(indexToChange)][field.name] = {
+        value: body.get(field.name),
+        errors: [],
+      };
+    });
+
+    session.set("context", {
+      ...context,
+      [expandableList.name]: {
+        value: expandableListArr,
+        errors: [],
+      },
+    });
+
+    return redirect(pathname, {
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    });
+  } else if (operationType === "delete-list-item") {
+    let indexToDelete = body.get("index-to-delete");
+
+    let expandableList = formBlueprint[context?.currentStep]?.fields.find(
+      (item) => {
+        return item.type === "expandable-list";
+      }
+    );
+    let expandableListArr = context?.[expandableList.name]?.value ?? [];
+    expandableListArr.splice(Number(indexToDelete), 1);
+
+    session.set("context", {
+      ...context,
+      [expandableList.name]: {
+        value: expandableListArr,
+        errors: [],
+      },
+    });
+
+    return redirect(pathname, {
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    });
   }
 
   let submitType: "back" | "next" | "submit" | string =
@@ -76,27 +182,28 @@ async function formActionFunction({
 
       session.set("context", context);
 
-      return json(
-        {},
-        {
-          headers: {
-            "Set-Cookie": await commitSession(session),
-          },
-        }
-      );
+      return redirect(pathname, {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
   }
 
   // Add the form values to context
-  // @ts-expect-error Overload not externally visible
-  await addFormValuesToContext({ formType, formStructure, body, context });
+  await addFormValuesToContext({
+    formType,
+    formBlueprint,
+    body,
+    context,
+  });
 
   // Validate the form inputs using the validation
   // methods from the form structure
   if (formType === "basic") {
     console.log("basically");
 
-    formStructure.forEach((formField) => {
+    formBlueprint.forEach((formField) => {
       validateFormFieldValue({ context, formField });
     });
   }
@@ -104,8 +211,7 @@ async function formActionFunction({
   if (formType === "multipart") {
     const currentFormStep = context.currentStep;
 
-    // @ts-ignore
-    for (const formField of formStructure[currentFormStep]?.fields) {
+    for (const formField of formBlueprint[currentFormStep]?.fields) {
       // console.log({ formField });
 
       validateFormFieldValue({ context, formField });
@@ -132,7 +238,7 @@ async function formActionFunction({
   let errorsInContext = checkContextForErrors({
     context,
     formType,
-    formStructure,
+    formBlueprint,
   });
 
   // console.log({ errorsInContext, context });
@@ -164,7 +270,7 @@ async function formActionFunction({
     // (Next, Back, Submit)
     // * If we are at the end, we want to handle the data,
     // otherwise we want to show the next step of the form
-    const formStage = getFormStage({ formStructure, context });
+    const formStage = getFormStage({ formBlueprint, context });
     context.formStage = formStage;
 
     // Handle data
@@ -180,6 +286,8 @@ async function formActionFunction({
         request,
       });
     } else {
+      console.log("pow");
+
       // console.log("whats up dawg?");
       // Still at the beginning or middle of the form
       // All the inputs were correct, we want to go to
@@ -189,27 +297,21 @@ async function formActionFunction({
 
       session.set("context", context);
 
-      return json(
-        {},
-        {
-          headers: {
-            "Set-Cookie": await commitSession(session),
-          },
-        }
-      );
+      return redirect(pathname, {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
     }
   }
 
   console.log("you're here?");
 
-  return json(
-    {},
-    {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    }
-  );
+  return redirect(pathname, {
+    headers: {
+      "Set-Cookie": await commitSession(session),
+    },
+  });
 }
 
 export { formActionFunction };

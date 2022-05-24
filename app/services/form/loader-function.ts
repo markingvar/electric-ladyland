@@ -1,4 +1,4 @@
-import { FormFieldInput, MultiStepForm } from "~/services/form/types";
+import type { FormFieldInput, MultiStepForm } from "~/services/form/types";
 import {
   getSession,
   commitSession,
@@ -9,19 +9,19 @@ import { addFieldToContext, checkForFieldNameAndValue } from "./loader-utils";
 import { getFormStage } from "./shared";
 
 async function formLoaderFunction({
-  formType,
+  basicOrMultipart,
   request,
-  formStructure,
+  formBlueprint,
 }:
   | {
-      formType: "multipart";
+      basicOrMultipart: "multipart";
       request: Request;
-      formStructure: MultiStepForm;
+      formBlueprint: MultiStepForm;
     }
   | {
-      formType: "basic";
+      basicOrMultipart: "basic";
       request: Request;
-      formStructure: FormFieldInput[];
+      formBlueprint: FormFieldInput[];
     }): Promise<any> {
   // Get current session
   const session = await getSession(request.headers.get("Cookie"));
@@ -31,18 +31,17 @@ async function formLoaderFunction({
   console.log("here's your context", context);
 
   // Check to see if the current context matches the current
-  // form structure
-  // If it does not match, we want to reset it
-  // @ts-expect-error overloads not externally visible
-  context = checkExistingContext({ formStructure, formType, context });
+  // form structure. If it doesn't match, there is a good chance
+  // that there is no context or we are coming from a different form
+  context = checkExistingContext({ formBlueprint, basicOrMultipart, context });
 
-  // console.log({ context });
   // If the context object doesn't have any length, we
   // know that it is empty and we need to seed it
   if (Object.keys(context).length < 1) {
-    // @ts-expect-error overload not externally visible
-    context = seedContextWithInitialValues({ formStructure, formType });
+    context = seedContextWithInitialValues({ formBlueprint, basicOrMultipart });
   }
+
+  console.log("here's your context now", context);
 
   // Get the current step
   context?.currentStep ?? 0;
@@ -53,8 +52,8 @@ async function formLoaderFunction({
     context.currentStep = 0;
   }
 
-  if (formType === "multipart") {
-    let formStage = getFormStage({ context, formStructure });
+  if (basicOrMultipart === "multipart") {
+    let formStage = getFormStage({ context, formBlueprint });
 
     // console.log({ formStage, context });
 
@@ -73,18 +72,19 @@ async function formLoaderFunction({
 
     context.formStage = formStage;
     // @ts-ignore
-    context.nextButtonText = formStructure[context.currentStep]?.nextButtonText;
+    context.nextButtonText = formBlueprint[context.currentStep]?.nextButtonText;
     // @ts-ignore
-    context.backButtonText = formStructure[context.currentStep]?.backButtonText;
+    context.backButtonText = formBlueprint[context.currentStep]?.backButtonText;
   }
 
   session.set("context", context);
 
-  if (formType === "multipart") {
+  if (basicOrMultipart === "multipart") {
+    console.log({ currentStep: context?.currentStep });
+
     return {
       context,
-      // @ts-ignore
-      formStructure: formStructure[context.currentStep]?.fields,
+      currentStepBlueprint: formBlueprint[context.currentStep]?.fields,
       commitSession,
       session,
       commitSessionFn: async () => {
@@ -94,7 +94,7 @@ async function formLoaderFunction({
   } else {
     return {
       context,
-      formStructure,
+      currentStepBlueprint: formBlueprint,
       commitSession,
       session,
       commitSessionFn: async () => {
@@ -102,7 +102,7 @@ async function formLoaderFunction({
       },
     };
     // return json(
-    //   { context, formStructure },
+    //   { context, formBlueprint },
     //   {
     //     headers: {
     //       "Set-Cookie": await commitSession(session),
@@ -115,18 +115,18 @@ async function formLoaderFunction({
 // Check to see if the context applies to the current form
 
 function checkExistingContext({
-  formType,
-  formStructure,
+  basicOrMultipart,
+  formBlueprint,
   context,
 }:
   | {
-      formType: "basic";
-      formStructure: FormFieldInput[];
+      basicOrMultipart: "basic";
+      formBlueprint: FormFieldInput[];
       context: any;
     }
   | {
-      formType: "multipart";
-      formStructure: MultiStepForm;
+      basicOrMultipart: "multipart";
+      formBlueprint: MultiStepForm;
       context: any;
     }): any {
   // If context does not exist, return early. We will need to
@@ -139,11 +139,13 @@ function checkExistingContext({
 
   let incorrectContext = false;
 
-  if (formType === "multipart") {
-    for (const step of formStructure) {
+  if (basicOrMultipart === "multipart") {
+    for (const step of formBlueprint) {
       // @ts-ignore
       for (const field of step?.fields) {
         if (incorrectContext) {
+          console.log("haro!");
+
           return {};
         }
 
@@ -152,9 +154,9 @@ function checkExistingContext({
     }
   }
 
-  if (formType === "basic") {
+  if (basicOrMultipart === "basic") {
     // @ts-ignore
-    for (const field of formStructure) {
+    for (const field of formBlueprint) {
       if (incorrectContext) {
         return {};
       }
@@ -168,31 +170,31 @@ function checkExistingContext({
 }
 
 function seedContextWithInitialValues({
-  formType,
-  formStructure,
+  basicOrMultipart,
+  formBlueprint,
 }: {
-  formType: "multipart";
-  formStructure: MultiStepForm;
+  basicOrMultipart: "multipart";
+  formBlueprint: MultiStepForm;
 }): any;
 function seedContextWithInitialValues({
-  formType,
-  formStructure,
+  basicOrMultipart,
+  formBlueprint,
 }: {
-  formType: "basic";
-  formStructure: FormFieldInput[];
+  basicOrMultipart: "basic";
+  formBlueprint: FormFieldInput[];
 }): any;
 function seedContextWithInitialValues({
-  formType,
-  formStructure,
+  basicOrMultipart,
+  formBlueprint,
 }: {
-  formType: "multipart" | "basic";
-  formStructure: MultiStepForm | FormFieldInput[];
+  basicOrMultipart: "multipart" | "basic";
+  formBlueprint: MultiStepForm | FormFieldInput[];
 }): any {
   // Give the context object initial values
   let context: any = {};
 
-  if (formType === "multipart") {
-    for (const step of formStructure) {
+  if (basicOrMultipart === "multipart") {
+    for (const step of formBlueprint) {
       // console.log({ step });
 
       // @ts-ignore
@@ -208,8 +210,8 @@ function seedContextWithInitialValues({
     context.currentStep = 0;
   }
 
-  if (formType === "basic") {
-    for (const nestedField of formStructure) {
+  if (basicOrMultipart === "basic") {
+    for (const nestedField of formBlueprint) {
       if (typeof nestedField === "object") {
         // @ts-ignore
         addFieldToContext({ field: nestedField, context });

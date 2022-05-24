@@ -17,6 +17,8 @@ export function MultipartForm({
   action?: string;
   reloadDocument?: boolean;
 }) {
+  console.log({ formStructure });
+
   return (
     <div className="form-container relative">
       <FormWrapper reloadDocument={reloadDocument} action={action}>

@@ -1,4 +1,4 @@
-import { Step, MultiStepForm } from "~/services/form/types";
+import type { Step, MultiStepForm } from "~/services/form/types";
 import { validation } from "~/services/form/validation";
 
 const clientDetailsStep: Step = {

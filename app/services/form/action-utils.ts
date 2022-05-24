@@ -19,20 +19,20 @@ function honeypotFieldHasValue({ body }: { body: FormData }) {
 // form data and add them to context
 function addFormValuesToContext({
   formType,
-  formStructure,
+  formBlueprint,
   body,
   context,
 }:
   | {
       formType: "multipart";
       context: any;
-      formStructure: MultiStepForm;
+      formBlueprint: MultiStepForm;
       body: FormData;
     }
   | {
       formType: "basic";
       context: any;
-      formStructure: FormFieldInput[];
+      formBlueprint: FormFieldInput[];
       body: FormData;
     }): any {
   // Get the inputs from the form
@@ -122,7 +122,7 @@ function addFormValuesToContext({
 
   // Use the form structure to create a context object
   if (formType === "basic") {
-    formStructure.forEach((field) => {
+    formBlueprint.forEach((field) => {
       addFieldToContext(field);
     });
   }
@@ -131,12 +131,12 @@ function addFormValuesToContext({
     // Get the current form step to know what to add to context
     const currentFormStep = context.currentStep;
 
-    // console.log({ currentFormStep, formStructure, context });
+    // console.log({ currentFormStep, formBlueprint, context });
 
-    // console.log("lol: ", typeof formStructure[currentFormStep]);
+    // console.log("lol: ", typeof formBlueprint[currentFormStep]);
 
     // @ts-ignore
-    for (const field of formStructure[currentFormStep]?.fields) {
+    for (const field of formBlueprint[currentFormStep]?.fields) {
       if (field) {
         addFieldToContext(field);
       }
@@ -248,15 +248,15 @@ function validateFormFieldValue({
 function checkContextForErrors({
   context,
   formType,
-  formStructure,
+  formBlueprint,
 }:
   | {
-      formStructure: FormFieldInput[];
+      formBlueprint: FormFieldInput[];
       formType: "basic";
       context: any;
     }
   | {
-      formStructure: MultiStepForm;
+      formBlueprint: MultiStepForm;
       formType: "multipart";
       context: any;
     }): boolean {
@@ -302,7 +302,7 @@ function checkContextForErrors({
     let fieldsToValidate: string[] = [];
 
     // @ts-ignore
-    for (const field of formStructure[currentFormStep]?.fields) {
+    for (const field of formBlueprint[currentFormStep]?.fields) {
       // console.log({ field });
 
       if (context) addFieldNameToValidateToArray(field, fieldsToValidate);

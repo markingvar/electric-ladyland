@@ -58,7 +58,7 @@ export type ExpandableList = {
   name: string;
   listLabel?: string;
   listDescription?: string;
-  listItemStructure: FormStructure;
+  listItemStructure: FormBlueprint;
   initialValue: any[];
   addItemLabel: string;
   editItemLabel: string;
@@ -136,7 +136,7 @@ export type FormFieldInput =
   | CheckboxGroup
   | ExpandableList;
 
-export type FormStructure = FormFieldInput[];
+export type FormBlueprint = FormFieldInput[];
 
 export type Step = {
   fields: FormFieldInput[];

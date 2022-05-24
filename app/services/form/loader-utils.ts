@@ -12,8 +12,11 @@ function checkForFieldNameAndValue({
   // console.log({ contextFieldName });
 
   if (contextFieldName) {
-    if (typeof contextFieldName?.value !== "string") {
-      // console.log("bad value: ", contextFieldName.value);
+    if (
+      typeof contextFieldName?.value !== "string" &&
+      typeof contextFieldName?.value !== "object"
+    ) {
+      console.log("bad value: ", contextFieldName.value);
 
       return true;
     }
