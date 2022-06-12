@@ -4,13 +4,13 @@ import {
   handleListItemFormStructureOp,
   honeypotFieldHasValue,
 } from "./action-utils";
-import { FormFieldInput, MultiStepForm } from "./types";
+import type { FormFieldInput, MultiStepForm } from "./types";
 import {
   commitSession,
   getSession,
   destroySession,
 } from "~/services/form/session.server";
-import { json, redirect } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 import {
   addFormValuesToContext,
   validateFormFieldValue,
