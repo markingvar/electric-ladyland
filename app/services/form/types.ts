@@ -1,6 +1,6 @@
 type AlignText = "left" | "right" | "center";
 
-export type StatefulRadioField = {
+export type StatefulRadioFieldBlueprint = {
   type: "stateful-radio";
   name: string;
   testName?: string;
@@ -12,14 +12,14 @@ export type StatefulRadioField = {
   showOnMobileTable?: boolean;
 };
 
-type Hidden = {
+type HiddenFieldBlueprint = {
   type: "hidden";
   label?: string;
   name: string;
   initialValue: string;
 };
 
-type RadioField = {
+export type RadioFieldBlueprint = {
   type: "radio";
   testName?: string;
   name: string;
@@ -32,7 +32,7 @@ type RadioField = {
   alignText?: AlignText;
 };
 
-type Checkbox = {
+export type CheckboxBlueprint = {
   testName?: string;
   type: "checkbox";
   name: string;
@@ -44,16 +44,16 @@ type Checkbox = {
   alignText?: AlignText;
 };
 
-type CheckboxGroup = {
+export type CheckboxGroupBlueprint = {
   type: "checkbox-group";
   name: string;
-  groupLabel: string;
+  label: string;
   description?: string;
-  checkboxes: Checkbox[];
+  checkboxes: CheckboxBlueprint[];
   showOnMobileTable?: boolean;
 };
 
-export type ExpandableList = {
+export type ExpandableListBlueprint = {
   type: "expandable-list";
   name: string;
   listLabel?: string;
@@ -65,49 +65,9 @@ export type ExpandableList = {
   addOrEditItemModalLabel: string;
 };
 
-type TextField = {
+export type TextFieldBlueprint = {
   testName?: string;
-  type: "text" | "textarea";
-  description?: string;
-  name: string;
-  label: string;
-  required?: boolean;
-  placeholder?: string;
-  initialValue?: string;
-  validation: {
-    formInputPattern?: string;
-    formInputMessage?: string;
-    patterns: string[];
-    messages: string[];
-  };
-  showOnMobileTable?: boolean;
-  tableFlex?: number;
-  alignText?: AlignText;
-};
-
-type PasswordField = {
-  testName?: string;
-  type: "password";
-  description?: string;
-  name: string;
-  label: string;
-  required?: boolean;
-  placeholder?: string;
-  initialValue?: string;
-  validation: {
-    formInputPattern?: string;
-    formInputMessage?: string;
-    patterns: string[];
-    messages: string[];
-  };
-  showOnMobileTable?: boolean;
-  tableFlex?: number;
-  alignText?: AlignText;
-};
-
-type EmailField = {
-  testName?: string;
-  type: "email";
+  type: "text" | "textarea" | "password" | "email";
   description?: string;
   name: string;
   label: string;
@@ -126,15 +86,13 @@ type EmailField = {
 };
 
 export type FormFieldInput =
-  | StatefulRadioField
-  | RadioField
-  | TextField
-  | PasswordField
-  | EmailField
-  | Checkbox
-  | Hidden
-  | CheckboxGroup
-  | ExpandableList;
+  | StatefulRadioFieldBlueprint
+  | RadioFieldBlueprint
+  | TextFieldBlueprint
+  | CheckboxBlueprint
+  | HiddenFieldBlueprint
+  | CheckboxGroupBlueprint
+  | ExpandableListBlueprint;
 
 export type FormBlueprint = FormFieldInput[];
 
