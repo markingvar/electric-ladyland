@@ -24,6 +24,8 @@ export function StatefulRadio({
     }
   });
 
+  console.log({ context });
+
   const [selectedValue, setSelectedValue] = useState(selectedIndex);
 
   return (

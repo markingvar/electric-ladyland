@@ -52,9 +52,7 @@ export function FormField({
   }
 
   if (field.type === "stateful-radio") {
-    return (
-      <StatefulRadio fieldBlueprint={field} context={context[field.name]} />
-    );
+    return <StatefulRadio fieldBlueprint={field} context={context} />;
   }
   return null;
 }
